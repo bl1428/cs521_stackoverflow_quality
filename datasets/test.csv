@@ -1,0 +1,81 @@
+tags,owner,is_answered,view_count,accepted_answer_id,answer_count,score,last_activity_date,creation_date,last_edit_date,question_id,content_license,link,title,body
+"['c++', 'c++11', 'types', 'stdint', 'cstdint']","{'reputation': 1996, 'user_id': 2534689, 'user_type': 'registered', 'accept_rate': 100, 'profile_image': 'https://i.stack.imgur.com/GoNJo.png?s=128&g=1', 'display_name': 'Rick de Water', 'link': 'https://stackoverflow.com/users/2534689/rick-de-water'}",True,1447,59553656.0,2,26,1580421796,1577882201,1580421796,59552571,CC BY-SA 4.0,https://stackoverflow.com/questions/59552571/how-to-check-if-fixed-width-integers-are-defined,How to check if fixed width integers are defined,"In C++, fixed width integers are defined as optional, but I can't seems to find the recommended way to check if they are actually defined.
+What would be a portable way to check if fixed width integers are available?
+"
+"['go', 'jetbrains-ide', 'goland']","{'reputation': 261, 'user_id': 12637942, 'user_type': 'registered', 'profile_image': 'https://www.gravatar.com/avatar/64ae0a55e5096d8b4672f482be4b886d?s=128&d=identicon&r=PG&f=1', 'display_name': 'David', 'link': 'https://stackoverflow.com/users/12637942/david'}",True,5255,,8,25,1614861337,1577915594,1577917831,59556394,CC BY-SA 4.0,https://stackoverflow.com/questions/59556394/goland-jetbrains-shows-error-message-unresolved-reference-but-code-compiles,GoLand (JetBrains) shows error message &quot;Unresolved Reference&quot;. But Code compiles and runs,"I am doing a project in the GoLanguage and use GoLand by Jetbrains as an IDE.
+GoLand shows me in the IDE an error message (""unresolved reference""), but still compiles and runs correctly. 
+Here is a similar (but simpler) example of some code that I have found here on stackoverflow (Go - append to slice in struct). The same error message appears. But obviously I have implemented the method just a few lines above. 
+package main
+
+import (
+""fmt""
+)
+
+ type MyBoxItem struct {
+Name string
+ }
+
+ type MyBox struct {
+Items []MyBoxItem
+ }
+
+func (box *MyBox) AddItem(item MyBoxItem) {
+box.Items = append(box.Items, item)
+}
+
+
+ func main() {
+
+item1 := MyBoxItem{Name: ""Test Item 1""}
+item2 := MyBoxItem{Name: ""Test Item 2""}
+
+box := MyBox{}
+
+box.AddItem(item1)
+box.AddItem(item2)
+
+// checking the output
+fmt.Println(len(box.Items))
+fmt.Println(box.Items)
+}
+
+box.AddItem(item1) and box.AddItem(item2) are marked red as an error. If I move my cursor above it it says (unresolved reference ""AddItem""). Yet the code compiles and runs. And as this was the solution to an other stackoverflow question, I do not think that the code is wrong. Furthermore I cannot find any mistakes in it.
+
+Can someone help? Thanks a lot
+[EDIT: I load the code from a remote server and edit it locally on my private pc. After finishing my changes, I upload it to the remote server (using GoLands tools like ""Browse remote host"") and build and compile it there. After trying it out locally with the very same code, the error message sometimes is there and sometimes not. I am totally confused]
+"
+"['flutter', 'dart']","{'reputation': 1881, 'user_id': 11873978, 'user_type': 'registered', 'profile_image': 'https://lh3.googleusercontent.com/-kx1YQoaQmm0/AAAAAAAAAAI/AAAAAAAAAAA/ACHi3rd9JQ9vSPKPyuX5gu32Q3QKsdylGg/photo.jpg?sz=128', 'display_name': 'Shruti Ramnandan Sharma', 'link': 'https://stackoverflow.com/users/11873978/shruti-ramnandan-sharma'}",True,17503,59558669.0,5,24,1577966924,1577942495,1577943069,59558604,CC BY-SA 4.0,https://stackoverflow.com/questions/59558604/why-do-we-use-dispose-method-in-dart-code,Why do we use dispose() method in dart code?,"Why are we using dispose() method? I'm little confused about it.
+what will be issue occurs If we don't use it and what's the benefit of using it?
+@override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+"
+"['java', 'java-8', 'comparator', 'java-11', 'treeset']","{'reputation': 27764, 'user_id': 3764965, 'user_type': 'registered', 'accept_rate': 94, 'profile_image': 'https://i.stack.imgur.com/5aIx2.jpg?s=128&g=1', 'display_name': 'Nikolas Charalambidis', 'link': 'https://stackoverflow.com/users/3764965/nikolas-charalambidis'}",True,655,59553083.0,1,21,1577927284,1577886052,1577927145,59553029,CC BY-SA 4.0,https://stackoverflow.com/questions/59553029/why-doesnt-removing-from-a-treeset-with-a-custom-comparator-remove-a-larger-set,Why doesn&#39;t removing from a TreeSet with a custom comparator remove a larger set of items?,"Using both Java 8 and Java 11, consider the following TreeSet with a String::compareToIgnoreCase comparator:
+final Set<String> languages = new TreeSet<>(String::compareToIgnoreCase);
+languages.add(""java"");
+languages.add(""c++"");
+languages.add(""python"");
+
+System.out.println(languages);                 // [c++, java, python]
+
+When I try to remove the exact elements present in the TreeSet, it works: all of those specified are removed:
+languages.removeAll(Arrays.asList(""PYTHON"", ""C++""));
+
+System.out.println(languages);                 // [java]
+
+However, if I try to remove instead more than is present in the TreeSet, the call doesn't remove anything at all (this is not a subsequent call but called instead of the snippet above):
+languages.removeAll(Arrays.asList(""PYTHON"", ""C++"", ""LISP""));
+
+System.out.println(languages);                 // [c++, java, python]
+
+What am I doing wrong? Why does it behave this way?
+Edit: String::compareToIgnoreCase is a valid comparator:
+(l, r) -> l.compareToIgnoreCase(r)
+
+"
+"['c++', 'set', 'stdset']","{'reputation': 2328, 'user_id': 5954825, 'user_type': 'registered', 'profile_image': 'https://www.gravatar.com/avatar/b46e345831a9b1beeb8bfee5cbf70b6f?s=128&d=identicon&r=PG&f=1', 'display_name': 'mfnx', 'link': 'https://stackoverflow.com/users/5954825/mfnx'}",True,2180,59555327.0,2,16,1577969124,1577905155,1577969124,59555257,CC BY-SA 4.0,https://stackoverflow.com/questions/59555257/does-stdset-store-objects-contiguously-in-memory,Does std::set store objects contiguously in memory?,"Does std::set store objects in contiguous memory like std::vector?
+I haven't been able to find this on the web, cppreference doesn't mention details on memory allocation. But I can't see why it couldn't use contiguous memory, hence my question.
+"

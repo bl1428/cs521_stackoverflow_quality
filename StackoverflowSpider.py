@@ -1,6 +1,9 @@
 from stackapi import StackAPI
 import datetime
+import os
 import pandas as pd
+import numpy as np
+from bs4 import BeautifulSoup
 
 # params
 startDate = '2020-01-01'
@@ -13,17 +16,46 @@ toDate = int(datetime.datetime.strptime(endDate, '%Y-%m-%d').timestamp())
 SITE.page_size = 5 # limit per api call is 100
 SITE.max_pages = 1 # number of api call
 
-questions = SITE.fetch('questions', fromdate=fromDate, todate=toDate, sort='votes', order='desc')
+questions = SITE.fetch('questions', fromdate=fromDate, todate=toDate, sort='votes', order='desc', filter='withbody')
 
 # save data to daataframe
 pd.set_option('display.max_columns', None)
 df = pd.DataFrame(questions['items'])
-print(df)
+# print(df)
 
-# for item in questions['items']:
-#     print(item['title'])
+# clean data TODO: add different clean methods
+def remove_specialchar(body):
+    # remove html tag
+    soup = BeautifulSoup(body, 'html.parser')
+    body = soup.get_text()
+    return body
 
-# example response for questions, there's no content included!!
+# clean pipeline
+def stack_cleaning(stacks, flag):
+    for i in range(len(stacks)):
+        if flag == 'html_tag':
+            stacks[i] = remove_specialchar(stacks[i])
+    return stacks
+
+
+df['body'] = stack_cleaning(df['body'], 'html_tag')
+print(df['body'])
+
+# save it as csv
+def save_dataset(df, df_name):
+    print('Saving dataset...')
+    #Create Saving Files
+    # if not os.path.exists('/datasets'):
+    #     os.makedirs('/datasets')
+    df.to_csv(r'./datasets/' + df_name + '.csv', index=False, header=True)
+    print('Saved parsed dataset')
+
+save_dataset(df, 'test')
+
+
+# todo: fetch all the questions in the specific time range
+
+# example response for questions
 # https://api.stackexchange.com/docs/questions#page=1&pagesize=5&fromdate=2020-01-01&todate=2020-01-02&order=desc&sort=votes&filter=default&site=stackoverflow&run=true
     # {
     #     "items": [
