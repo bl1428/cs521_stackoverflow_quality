@@ -1,47 +1,72 @@
-from stackapi import StackAPI
+import stackapi
 import datetime
+import time
 import os
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
+from fp.fp import FreeProxy
 
 # params
-startDate = '2020-01-01'
-endDate = '2020-01-02'
+startDate = '2020-02-01'
+endDate = '2020-02-28'
+timeInterval = 3600 #split the request by an hour
+pd.set_option('display.max_columns', None)
+
+#####################
+# Part I: Fetch Posts
+#####################
 
 # StackAPI start
-SITE = StackAPI('stackoverflow')
+
+# setup API with new proxy
+def proxy_change():
+    proxy = {'https': FreeProxy(country_id=['GB', 'JP', 'TR', 'ID', 'FR'], rand=True).get()}
+    print('Change proxy server: ' + proxy['https'])
+    new_SITE = None
+    while new_SITE is None:
+        try:
+            SITE = stackapi.StackAPI('stackoverflow', proxy=proxy)
+            SITE.page_size = 100  # limit per api call is 100
+            SITE.max_pages = 1000000  # number of api call
+            new_SITE = SITE
+            print('This proxy server is workable: ' + proxy['https'])
+        except:
+            proxy = {'https': FreeProxy(country_id=['GB', 'JP', 'TR', 'ID', 'FR'], rand=True).get()}
+            print('Change proxy server: ' + proxy['https'])
+            pass
+    return SITE
+
+spider_start_time = datetime.datetime.utcnow()
 fromDate = int(datetime.datetime.strptime(startDate, '%Y-%m-%d').timestamp())
 toDate = int(datetime.datetime.strptime(endDate, '%Y-%m-%d').timestamp())
-SITE.page_size = 5 # limit per api call is 100
-SITE.max_pages = 1 # number of api call
-
-questions = SITE.fetch('questions', fromdate=fromDate, todate=toDate, sort='votes', order='desc', filter='withbody')
-
-# save data to daataframe
-pd.set_option('display.max_columns', None)
-df = pd.DataFrame(questions['items'])
-# print(df)
-
-# clean data TODO: add different clean methods
-def remove_specialchar(body):
-    # remove html tag
-    soup = BeautifulSoup(body, 'html.parser')
-    body = soup.get_text()
-    return body
-
-# clean pipeline
-def stack_cleaning(stacks, flag):
-    for i in range(len(stacks)):
-        if flag == 'html_tag':
-            stacks[i] = remove_specialchar(stacks[i])
-    return stacks
+SITE = proxy_change()
 
 
-df['body'] = stack_cleaning(df['body'], 'html_tag')
-print(df['body'])
+#First batch of scraping
+timeInterval_start = fromDate
+timeInterval_end = fromDate+timeInterval
+print('scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+posts = SITE.fetch('posts', fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
+df = pd.DataFrame(posts['items'])
+print('finish batch')
 
-# save it as csv
+#Loop the rest scraping
+while(timeInterval_end <= toDate):
+    print('scraping posts from '+datetime.datetime.fromtimestamp(timeInterval_start).isoformat()+' to '+ datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+    try:
+        posts = SITE.fetch('posts', fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
+    except stackapi.StackAPIError as e:
+        print(e.code)
+        print(e.message)
+        SITE = proxy_change()
+        continue
+    df = df.append(posts['items'])
+    print('finish batch')
+    timeInterval_start = timeInterval_start + timeInterval
+    timeInterval_end = timeInterval_end + timeInterval
+
+#Save it as csv
 def save_dataset(df, df_name):
     print('Saving dataset...')
     #Create Saving Files
@@ -52,8 +77,36 @@ def save_dataset(df, df_name):
 
 save_dataset(df, 'test')
 
+#####################
+# Part II: Data Cleaning
+#####################
+#TODO: add different clean methods
 
-# todo: fetch all the questions in the specific time range
+df_clean = pd.read_csv('./datasets/test.csv')
+# remove html tag
+def remove_specialchar(body):
+    soup = BeautifulSoup(body, 'html.parser')
+    return soup
+
+# clean pipeline
+def stack_clean(stacks, flag):
+    for i in range(len(stacks)):
+        if flag == 'html_tag':
+            print(type(stacks[i]))
+            print(stacks[i])
+            stacks[i] = remove_specialchar(stacks[i])
+    return stacks
+
+
+df_clean['body'] = stack_clean(df_clean['body'], 'html_tag')
+save_dataset(df_clean, 'test_cleaned')
+
+
+# Print process time
+spider_finish_time = datetime.datetime.utcnow()
+time_diff =spider_finish_time-spider_start_time
+print("Scraping stackoverflow within {} seconds".format(time_diff.seconds))
+
 
 # example response for questions
 # https://api.stackexchange.com/docs/questions#page=1&pagesize=5&fromdate=2020-01-01&todate=2020-01-02&order=desc&sort=votes&filter=default&site=stackoverflow&run=true
