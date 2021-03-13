@@ -73,7 +73,9 @@ while(timeInterval_end <= toDate):
     df = df.append(posts['items'])
     batch_finish_time = datetime.datetime.utcnow()
     batch_time_diff = batch_finish_time - batch_start_time
-    logging.info('finish batch. size:'+str(len(posts['items']))+' time: '+str(batch_time_diff.seconds)+'s')
+    logging.info('finish batch. size:'+str(len(posts['items']))+' time: '+str(batch_time_diff.seconds)+'s quota_remaining: '+str(posts['quota_remaining'])+' backoff: '+str(posts['backoff']))
+    if posts['backoff']>=1:
+        time.sleep(int(posts['backoff'])+1)
     timeInterval_start = timeInterval_start + timeInterval
     timeInterval_end = timeInterval_end + timeInterval
 
