@@ -1,5 +1,6 @@
 import stackapi
 import datetime
+import logging
 import time
 import os
 import pandas as pd
@@ -7,11 +8,16 @@ import numpy as np
 from bs4 import BeautifulSoup
 from fp.fp import FreeProxy
 
-# params
-startDate = '2020-02-01'
-endDate = '2020-02-28'
-timeInterval = 3600 #split the request by an hour
+# config
+startDate = '2020-03-01'
+endDate = '2020-03-31'
+timeInterval = 3600 #split the request by an hour(3600), half an hour(1800), or 15min(900)
+stackType = 'questions' # 'questions', 'answers', 'posts', 'comments'
+saveDatasetName = 'test_questions'
+cleanedDatasetName = 'test_questions_cleaned'
+
 pd.set_option('display.max_columns', None)
+logging.basicConfig(format='[%(asctime)s %(levelname)-8s] %(message)s', level=logging.DEBUG, handlers=[logging.FileHandler('spider.log',mode='w'), logging.StreamHandler()])
 
 #####################
 # Part I: Fetch Posts
@@ -21,19 +27,22 @@ pd.set_option('display.max_columns', None)
 
 # setup API with new proxy
 def proxy_change():
-    proxy = {'https': FreeProxy(country_id=['GB', 'JP', 'TR', 'ID', 'FR'], rand=True).get()}
-    print('Change proxy server: ' + proxy['https'])
-    new_SITE = None
-    while new_SITE is None:
+    proxy = {'https': FreeProxy(timeout=0.3, rand=True).get()}
+    logging.info('Change proxy server: ' + proxy['https'])
+    good_proxy_found = False
+    while good_proxy_found is False:
         try:
+            logging.info('validate proxy server...')
             SITE = stackapi.StackAPI('stackoverflow', proxy=proxy)
             SITE.page_size = 100  # limit per api call is 100
             SITE.max_pages = 1000000  # number of api call
-            new_SITE = SITE
-            print('This proxy server is workable: ' + proxy['https'])
-        except:
-            proxy = {'https': FreeProxy(country_id=['GB', 'JP', 'TR', 'ID', 'FR'], rand=True).get()}
-            print('Change proxy server: ' + proxy['https'])
+            good_proxy_found = True
+            logging.info('This proxy server is workable: ' + proxy['https'])
+        except Exception as e:
+            logging.warning(e)
+            logging.info('validation failed')
+            proxy = {'https': FreeProxy(timeout=0.3, rand=True).get()}
+            logging.info('Change proxy server: ' + proxy['https'])
             pass
     return SITE
 
@@ -46,43 +55,45 @@ SITE = proxy_change()
 #First batch of scraping
 timeInterval_start = fromDate
 timeInterval_end = fromDate+timeInterval
-print('scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
-posts = SITE.fetch('posts', fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
+logging.info('scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+posts = SITE.fetch(stackType, fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
 df = pd.DataFrame(posts['items'])
-print('finish batch')
+logging.info('finish batch. size:'+str(len(posts['items'])))
 
 #Loop the rest scraping
 while(timeInterval_end <= toDate):
-    print('scraping posts from '+datetime.datetime.fromtimestamp(timeInterval_start).isoformat()+' to '+ datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+    logging.info('scraping posts from '+datetime.datetime.fromtimestamp(timeInterval_start).isoformat()+' to '+ datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+    batch_start_time = datetime.datetime.utcnow()
     try:
-        posts = SITE.fetch('posts', fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
-    except stackapi.StackAPIError as e:
-        print(e.code)
-        print(e.message)
+        posts = SITE.fetch(stackType, fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
+    except Exception as e:
+        logging.warning(e)
         SITE = proxy_change()
         continue
     df = df.append(posts['items'])
-    print('finish batch')
+    batch_finish_time = datetime.datetime.utcnow()
+    batch_time_diff = batch_finish_time - batch_start_time
+    logging.info('finish batch. size:'+str(len(posts['items']))+' time: '+str(batch_time_diff.seconds)+'s')
     timeInterval_start = timeInterval_start + timeInterval
     timeInterval_end = timeInterval_end + timeInterval
 
 #Save it as csv
 def save_dataset(df, df_name):
-    print('Saving dataset...')
+    logging.info('Saving dataset...')
     #Create Saving Files
     # if not os.path.exists('/datasets'):
     #     os.makedirs('/datasets')
     df.to_csv(r'./datasets/' + df_name + '.csv', index=False, header=True)
-    print('Saved parsed dataset')
+    logging.info('Saved parsed dataset')
 
-save_dataset(df, 'test')
+save_dataset(df, saveDatasetName)
 
 #####################
 # Part II: Data Cleaning
 #####################
 #TODO: add different clean methods
 
-df_clean = pd.read_csv('./datasets/test.csv')
+df_clean = pd.read_csv('./datasets/'+saveDatasetName+'.csv')
 # remove html tag
 def remove_specialchar(body):
     soup = BeautifulSoup(body, 'html.parser')
@@ -99,13 +110,13 @@ def stack_clean(stacks, flag):
 
 
 df_clean['body'] = stack_clean(df_clean['body'], 'html_tag')
-save_dataset(df_clean, 'test_cleaned')
+save_dataset(df_clean, cleanedDatasetName)
 
 
 # Print process time
 spider_finish_time = datetime.datetime.utcnow()
 time_diff =spider_finish_time-spider_start_time
-print("Scraping stackoverflow within {} seconds".format(time_diff.seconds))
+logging.info("Scraping stackoverflow within {} seconds".format(time_diff.seconds))
 
 
 # example response for questions
