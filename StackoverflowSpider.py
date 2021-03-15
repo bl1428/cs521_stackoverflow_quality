@@ -10,41 +10,41 @@ from fp.fp import FreeProxy
 
 # config
 startDate = '2020-03-01'
-endDate = '2020-03-31'
-timeInterval = 3600 #split the request by an hour(3600), half an hour(1800), or 15min(900)
+endDate = '2020-04-01'
+timeInterval = 1800 #split the request by an hour(3600), half an hour(1800), or 15min(900)
 stackType = 'questions' # 'questions', 'answers', 'posts', 'comments'
-saveDatasetName = 'test_questions'
-cleanedDatasetName = 'test_questions_cleaned'
+saveDatasetName = '202003_questions'
+cleanedDatasetName = '202003_questions_cleaned'
 
+proxy_country = ['US','CA','MX','BR']
 pd.set_option('display.max_columns', None)
 logging.basicConfig(format='[%(asctime)s %(levelname)-8s] %(message)s', level=logging.DEBUG, handlers=[logging.FileHandler('spider.log',mode='w'), logging.StreamHandler()])
 
-#####################
-# Part I: Fetch Posts
-#####################
 
+#####################
 # StackAPI start
-
+#####################
 # setup API with new proxy
 def proxy_change():
-    proxy = {'https': FreeProxy(timeout=0.3, rand=True).get()}
-    logging.info('Change proxy server: ' + proxy['https'])
+    proxy = {'https': FreeProxy(country_id=proxy_country, timeout=0.3, rand=True).get()}
+    logging.info('Change proxy server: '+str(proxy['https']))
     good_proxy_found = False
     while good_proxy_found is False:
         try:
-            logging.info('validate proxy server...')
+            logging.info('Validate proxy server...')
             SITE = stackapi.StackAPI('stackoverflow', proxy=proxy)
             SITE.page_size = 100  # limit per api call is 100
             SITE.max_pages = 1000000  # number of api call
             good_proxy_found = True
-            logging.info('This proxy server is workable: ' + proxy['https'])
+            logging.info('This proxy server works! ' + str(proxy['https']))
         except Exception as e:
             logging.warning(e)
-            logging.info('validation failed')
-            proxy = {'https': FreeProxy(timeout=0.3, rand=True).get()}
-            logging.info('Change proxy server: ' + proxy['https'])
+            logging.info('Validation failed')
+            proxy = {'https': FreeProxy(country_id=proxy_country, timeout=0.3, rand=True).get()}
+            logging.info('Change proxy server: ' + str(proxy['https']))
             pass
     return SITE
+
 
 spider_start_time = datetime.datetime.utcnow()
 fromDate = int(datetime.datetime.strptime(startDate, '%Y-%m-%d').timestamp())
@@ -55,14 +55,14 @@ SITE = proxy_change()
 #First batch of scraping
 timeInterval_start = fromDate
 timeInterval_end = fromDate+timeInterval
-logging.info('scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+logging.info('Scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
 posts = SITE.fetch(stackType, fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
 df = pd.DataFrame(posts['items'])
-logging.info('finish batch. size:'+str(len(posts['items'])))
+logging.info('Finish batch. size:'+str(len(posts['items'])))
 
 #Loop the rest scraping
-while(timeInterval_end <= toDate):
-    logging.info('scraping posts from '+datetime.datetime.fromtimestamp(timeInterval_start).isoformat()+' to '+ datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
+while timeInterval_end <= toDate:
+    logging.info('Scraping posts from '+datetime.datetime.fromtimestamp(timeInterval_start).isoformat()+' to '+ datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
     batch_start_time = datetime.datetime.utcnow()
     try:
         posts = SITE.fetch(stackType, fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
@@ -73,51 +73,30 @@ while(timeInterval_end <= toDate):
     df = df.append(posts['items'])
     batch_finish_time = datetime.datetime.utcnow()
     batch_time_diff = batch_finish_time - batch_start_time
-    logging.info('finish batch. size:'+str(len(posts['items']))+' time: '+str(batch_time_diff.seconds)+'s quota_remaining: '+str(posts['quota_remaining'])+' backoff: '+str(posts['backoff']))
-    if posts['backoff']>=1:
+    logging.info('finish batch. size:'+str(len(posts['items']))+' time:'+str(batch_time_diff.seconds)+'s quota_remaining:'+str(posts['quota_remaining'])+' backoff:'+str(posts['backoff'])+'s')
+    if posts['backoff'] >= 1:
         time.sleep(int(posts['backoff'])+1)
     timeInterval_start = timeInterval_start + timeInterval
     timeInterval_end = timeInterval_end + timeInterval
 
-#Save it as csv
+if stackType == 'questions':
+    df = df.drop_duplicates(subset=['answer_count', 'score', 'last_activity_date', 'creation_date', 'last_edit_date', 'question_id','link'])
+
+# Save it as csv
 def save_dataset(df, df_name):
     logging.info('Saving dataset...')
-    #Create Saving Files
+    # Create Saving Files
     # if not os.path.exists('/datasets'):
     #     os.makedirs('/datasets')
     df.to_csv(r'./datasets/' + df_name + '.csv', index=False, header=True)
     logging.info('Saved parsed dataset')
 
+
 save_dataset(df, saveDatasetName)
-
-#####################
-# Part II: Data Cleaning
-#####################
-#TODO: add different clean methods
-
-df_clean = pd.read_csv('./datasets/'+saveDatasetName+'.csv')
-# remove html tag
-def remove_specialchar(body):
-    soup = BeautifulSoup(body, 'html.parser')
-    return soup
-
-# clean pipeline
-def stack_clean(stacks, flag):
-    for i in range(len(stacks)):
-        if flag == 'html_tag':
-            print(type(stacks[i]))
-            print(stacks[i])
-            stacks[i] = remove_specialchar(stacks[i])
-    return stacks
-
-
-df_clean['body'] = stack_clean(df_clean['body'], 'html_tag')
-save_dataset(df_clean, cleanedDatasetName)
-
 
 # Print process time
 spider_finish_time = datetime.datetime.utcnow()
-time_diff =spider_finish_time-spider_start_time
+time_diff = spider_finish_time - spider_start_time
 logging.info("Scraping stackoverflow within {} seconds".format(time_diff.seconds))
 
 
