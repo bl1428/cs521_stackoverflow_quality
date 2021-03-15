@@ -102,9 +102,10 @@ df_clean['body'] = stack_clean(df_clean['body'], 'html_tag')
 # Data Info
 wordcloud(df_clean['title'].to_string())
 wordcloud(df_clean['body'].to_string())
-sns.countplot(df_clean['is_answered'])
+df_clean['is_closed'] = df_clean['closed_date'].apply(np.isfinite)
+sns.countplot(df_clean['is_closed'])
 plt.show()
-sns.countplot(df_clean['answer_count'])
+sns.countplot(df_clean['closed_reason'])
 plt.show()
 
 print(df_clean.count)
