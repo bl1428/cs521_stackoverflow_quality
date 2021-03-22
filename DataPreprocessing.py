@@ -24,7 +24,7 @@ cleanedDatasetName = 'test_questions_cleaned'
 stopwordlist = set(stopwords.words("english"))
 wordnet_lemmatizer = WordNetLemmatizer()
 ps = PorterStemmer()
-pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_columns', None)
 
 
 #TODO: add different clean methods
@@ -85,7 +85,7 @@ def save_dataset(df, df_name):
 
 
 # generate word cloud
-def wordcloud(data,backgroundcolor = 'white', width = 400, height = 150):
+def wordcloud(data, backgroundcolor = 'white', width = 400, height = 150):
     wordcloud = WordCloud(stopwords = STOPWORDS, background_color = backgroundcolor,
                          width = width, height = height).generate(data)
     plt.figure(figsize = (15, 10))
@@ -97,14 +97,17 @@ def wordcloud(data,backgroundcolor = 'white', width = 400, height = 150):
 df_clean = pd.read_csv('./datasets/'+cleanedDatasetName+'.csv')
 # clean data
 df_clean['body'] = stack_clean(df_clean['body'], 'html_tag')
-# save_dataset(df_clean, cleanedDatasetName)
+save_dataset(df_clean, cleanedDatasetName)
 
 # Data Info
+df_clean['is_closed'] = df_clean['closed_date'].apply(np.isfinite)
 wordcloud(df_clean['title'].to_string())
 wordcloud(df_clean['body'].to_string())
-df_clean['is_closed'] = df_clean['closed_date'].apply(np.isfinite)
+
+print(df_clean.groupby('is_closed').count())
 sns.countplot(df_clean['is_closed'])
 plt.show()
+print(df_clean.groupby('closed_reason').count())
 sns.countplot(df_clean['closed_reason'])
 plt.show()
 

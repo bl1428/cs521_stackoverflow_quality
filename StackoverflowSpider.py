@@ -11,12 +11,12 @@ from fp.fp import FreeProxy
 # config
 startDate = '2020-03-01'
 endDate = '2020-04-01'
-timeInterval = 1800 #split the request by an hour(3600), half an hour(1800), or 15min(900)
+timeInterval = 43200 #split the request by an hour(3600), half an hour(1800), or 15min(900)
 stackType = 'questions' # 'questions', 'answers', 'posts', 'comments'
 saveDatasetName = '202003_questions'
 cleanedDatasetName = '202003_questions_cleaned'
 
-proxy_country = ['US','CA','MX','BR']
+proxy_country = [] #['US','CA','MX','BR']
 pd.set_option('display.max_columns', None)
 logging.basicConfig(format='[%(asctime)s %(levelname)-8s] %(message)s', level=logging.DEBUG, handlers=[logging.FileHandler('spider.log',mode='w'), logging.StreamHandler()])
 
@@ -58,7 +58,7 @@ timeInterval_end = fromDate+timeInterval
 logging.info('Scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
 posts = SITE.fetch(stackType, fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
 df = pd.DataFrame(posts['items'])
-logging.info('Finish batch. size:'+str(len(posts['items'])))
+logging.info('Finish batch. size:'+str(len(posts['items']))+' quota_remaining:'+str(posts['quota_remaining'])+' backoff:'+str(posts['backoff'])+'s')
 
 #Loop the rest scraping
 while timeInterval_end <= toDate:
