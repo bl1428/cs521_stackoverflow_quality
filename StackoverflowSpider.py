@@ -9,13 +9,14 @@ from bs4 import BeautifulSoup
 from fp.fp import FreeProxy
 
 # config
-startDate = '2020-03-01'
-endDate = '2020-03-31'
-timeInterval = 3600 #split the request by an hour(3600), half an hour(1800), or 15min(900)
+startDate = '2020-05-01'
+endDate = '2020-06-01'
+timeInterval = 43200 #split the request by an hour(3600), half an hour(1800), or 15min(900)
 stackType = 'questions' # 'questions', 'answers', 'posts', 'comments'
-saveDatasetName = 'test_questions'
-cleanedDatasetName = 'test_questions_cleaned'
+saveDatasetName = '202004_questions'
+cleanedDatasetName = '202004_questions_cleaned'
 
+proxy_country=[]
 pd.set_option('display.max_columns', None)
 logging.basicConfig(format='[%(asctime)s %(levelname)-8s] %(message)s', level=logging.DEBUG, handlers=[logging.FileHandler('spider.log',mode='w'), logging.StreamHandler()])
 
@@ -27,8 +28,8 @@ logging.basicConfig(format='[%(asctime)s %(levelname)-8s] %(message)s', level=lo
 
 # setup API with new proxy
 def proxy_change():
-    proxy = {'https': FreeProxy(timeout=0.3, rand=True).get()}
-    logging.info('Change proxy server: ' + proxy['https'])
+    proxy = {'https': FreeProxy(country_id=proxy_country, timeout=0.3, rand=True).get()}
+    logging.info('Change proxy server: ' + str(proxy['https']))
     good_proxy_found = False
     while good_proxy_found is False:
         try:
@@ -37,12 +38,12 @@ def proxy_change():
             SITE.page_size = 100  # limit per api call is 100
             SITE.max_pages = 1000000  # number of api call
             good_proxy_found = True
-            logging.info('This proxy server is workable: ' + proxy['https'])
+            logging.info('This proxy server is workable: ' + str(proxy['https']))
         except Exception as e:
             logging.warning(e)
             logging.info('validation failed')
-            proxy = {'https': FreeProxy(timeout=0.3, rand=True).get()}
-            logging.info('Change proxy server: ' + proxy['https'])
+            proxy = {'https': FreeProxy(country_id=proxy_country, timeout=0.3, rand=True).get()}
+            logging.info('Change proxy server: ' + str(proxy['https']))
             pass
     return SITE
 
@@ -58,7 +59,7 @@ timeInterval_end = fromDate+timeInterval
 logging.info('scraping posts from ' + datetime.datetime.fromtimestamp(timeInterval_start).isoformat() + ' to ' + datetime.datetime.fromtimestamp(timeInterval_end).isoformat())
 posts = SITE.fetch(stackType, fromdate=timeInterval_start, todate=timeInterval_end, sort='votes', order='desc', filter='withbody')
 df = pd.DataFrame(posts['items'])
-logging.info('finish batch. size:'+str(len(posts['items'])))
+logging.info('finish batch. size:'+str(len(posts['items']))+' quota_remaining:'+str(posts['quota_remaining'])+' backoff:'+str(posts['backoff']))
 
 #Loop the rest scraping
 while(timeInterval_end <= toDate):
@@ -73,11 +74,13 @@ while(timeInterval_end <= toDate):
     df = df.append(posts['items'])
     batch_finish_time = datetime.datetime.utcnow()
     batch_time_diff = batch_finish_time - batch_start_time
-    logging.info('finish batch. size:'+str(len(posts['items']))+' time: '+str(batch_time_diff.seconds)+'s quota_remaining: '+str(posts['quota_remaining'])+' backoff: '+str(posts['backoff']))
+    logging.info('finish batch. size:'+str(len(posts['items']))+' time:'+str(batch_time_diff.seconds)+'s quota_remaining:'+str(posts['quota_remaining'])+' backoff:'+str(posts['backoff']))
     if posts['backoff']>=1:
         time.sleep(int(posts['backoff'])+1)
     timeInterval_start = timeInterval_start + timeInterval
     timeInterval_end = timeInterval_end + timeInterval
+
+df = df.drop_duplicates(subset=['answer_count','score','last_activity_date','creation_date','last_edit_date','question_id','link'])
 
 #Save it as csv
 def save_dataset(df, df_name):
@@ -89,30 +92,6 @@ def save_dataset(df, df_name):
     logging.info('Saved parsed dataset')
 
 save_dataset(df, saveDatasetName)
-
-#####################
-# Part II: Data Cleaning
-#####################
-#TODO: add different clean methods
-
-df_clean = pd.read_csv('./datasets/'+saveDatasetName+'.csv')
-# remove html tag
-def remove_specialchar(body):
-    soup = BeautifulSoup(body, 'html.parser')
-    return soup
-
-# clean pipeline
-def stack_clean(stacks, flag):
-    for i in range(len(stacks)):
-        if flag == 'html_tag':
-            print(type(stacks[i]))
-            print(stacks[i])
-            stacks[i] = remove_specialchar(stacks[i])
-    return stacks
-
-
-df_clean['body'] = stack_clean(df_clean['body'], 'html_tag')
-save_dataset(df_clean, cleanedDatasetName)
 
 
 # Print process time
