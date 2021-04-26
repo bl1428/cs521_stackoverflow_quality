@@ -21,6 +21,7 @@ Code for retrieving the data used in this project is included. For convenience, 
 To use this file, download it and place it in the `/datasets` directory. Run `StackClassifier.ipynb`, which will produce another intermediate file containing preprocessed data, `df_questions`. This new file will be necessary for running the other two notebooks.
 
 ### Results
+A manually compiled, formatted report of experimental results is included in the `/results` directory.
 
 ------
 ## Software Dependencies
