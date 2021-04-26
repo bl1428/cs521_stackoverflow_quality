@@ -8,7 +8,7 @@ UIC CS 521, Spring 2021
 
 ### Code
 The main code deliverables in this repo are:
-- Scripts for retrieving and saving data in the `/data_utils` folder
+- Scripts for retrieving and saving data in the `/data_utils` directory
 - `StackClassifier.ipynb`: Notebook for experiments with different text features
 - `Resampling_imbalanced_data.ipynb`: Notebook for experiments with resampling techniques and different classifiers
 - `Generate_Bert_Embeddings.ipynb`: Code for generating BERT embeddings
@@ -18,7 +18,7 @@ Any other scripts and Jupyter notebooks contain exploratory and experimental cod
 ### Data
 Code for retrieving the data used in this project is included. For convenience, this [Google Drive link](https://drive.google.com/file/d/1aHecoSZiZMc2iN5dTp12VWuXjeDIXNX_/view?usp=sharing) contains the full corpus of ~147,000 questions in CSV format.
 
-
+To use this file, download it and place it in the `/datasets` directory. Run `StackClassifier.ipynb`, which will produce another intermediate file containing preprocessed data, `df_questions`. This new file will be necessary for running the other two notebooks.
 
 ### Results
 
