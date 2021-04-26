@@ -10,8 +10,8 @@ The main deliverables in this repo are:
     - `StackoverflowSpider.py`
     - `populate_database.py`
     - `create_table.sql`
-- `StackClassifier.ipynb`: Notebook for experiments with different classifiers
-- `Resampling_imbalanced_data.ipynb`: Notebook for experiments with resampling techniques'
+- `StackClassifier.ipynb`: Notebook for experiments with different text features
+- `Resampling_imbalanced_data.ipynb`: Notebook for experiments with resampling techniques and different classifiers
 
 Other scripts and Jupyter notebooks contain exploratory and experimental code, the useful parts of which have been incorporated into the deliverables above.
 
